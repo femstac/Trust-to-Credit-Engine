@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and financial trust metrics",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "trustScore": { "type": "number", "description": "0-100 score" },
+        "scoreReason": { "type": "string", "description": "Explanation for the current score" },
+        "lastAnalyzed": { "type": "string", "format": "date-time" },
+        "walletBalance": { "type": "number" },
+        "currency": { "type": "string", "enum": ["GHS", "NGN", "XOF", "XAF"] }
+      },
+      "required": ["uid", "trustScore"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Mobile money transaction log entry",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "type": { "type": "string", "enum": ["deposit", "withdrawal", "transfer", "payment"] },
+        "amount": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "counterparty": { "type": "string" },
+        "status": { "type": "string", "enum": ["completed", "failed", "pending"] }
+      },
+      "required": ["uid", "type", "amount", "timestamp"]
+    },
+    "Nudge": {
+      "title": "Nudge",
+      "description": "AI-generated behavioral nudge",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["savings", "education", "alert"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "isRead": { "type": "boolean" },
+        "actionTaken": { "type": "boolean" }
+      },
+      "required": ["uid", "message", "timestamp"]
+    },
+    "SavingsGoal": {
+      "title": "SavingsGoal",
+      "description": "User financial goal",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "title": { "type": "string" },
+        "targetAmount": { "type": "number" },
+        "currentAmount": { "type": "number" },
+        "deadline": { "type": "string", "format": "date-time" },
+        "category": { "type": "string", "enum": ["inventory", "education", "emergency", "other"] }
+      },
+      "required": ["uid", "title", "targetAmount"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile and score"
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "User transaction history"
+    },
+    "/users/{userId}/nudges/{nudgeId}": {
+      "schema": "Nudge",
+      "description": "User behavioral nudges"
+    },
+    "/users/{userId}/goals/{goalId}": {
+      "schema": "SavingsGoal",
+      "description": "User savings goals"
+    }
+  }
+}

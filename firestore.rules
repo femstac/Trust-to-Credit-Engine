@@ -1,0 +1,107 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required)
+    //   - displayName: string
+    //   - email: string
+    //   - trustScore: number (0-100)
+    //   - scoreReason: string
+    //   - lastAnalyzed: timestamp
+    //   - walletBalance: number
+    //   - currency: string
+    //
+    // Collection: users/{userId}/transactions
+    // Fields:
+    //   - uid: string (required)
+    //   - type: string (deposit, withdrawal, transfer, payment)
+    //   - amount: number
+    //   - timestamp: timestamp
+    //   - counterparty: string
+    //   - status: string
+    //
+    // Collection: users/{userId}/nudges
+    // Fields:
+    //   - uid: string (required)
+    //   - message: string
+    //   - type: string
+    //   - timestamp: timestamp
+    //   - isRead: bool
+    //   - actionTaken: bool
+    //
+    // Collection: users/{userId}/goals
+    // Fields:
+    //   - uid: string (required)
+    //   - title: string
+    //   - targetAmount: number
+    //   - currentAmount: number
+    //   - deadline: timestamp
+    //   - category: string
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.uid == request.auth.uid &&
+             data.trustScore is number && data.trustScore >= 0 && data.trustScore <= 100;
+    }
+
+    function isValidTransaction(data) {
+      return data.uid == request.auth.uid &&
+             data.amount is number && data.amount > 0 &&
+             data.type in ['deposit', 'withdrawal', 'transfer', 'payment'];
+    }
+
+    function isValidNudge(data) {
+      return data.uid == request.auth.uid &&
+             data.message is string && data.message.size() < 1000;
+    }
+
+    function isValidGoal(data) {
+      return data.uid == request.auth.uid &&
+             data.title is string && data.title.size() < 100 &&
+             data.targetAmount is number && data.targetAmount > 0;
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+      
+      match /transactions/{transactionId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidTransaction(request.resource.data);
+        allow update: if isOwner(userId) && isValidTransaction(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /nudges/{nudgeId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidNudge(request.resource.data);
+        allow update: if isOwner(userId) && isValidNudge(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /goals/{goalId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidGoal(request.resource.data);
+        allow update: if isOwner(userId) && isValidGoal(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}
